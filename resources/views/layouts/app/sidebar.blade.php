@@ -6,27 +6,37 @@
     <body class="min-h-screen bg-white dark:bg-zinc-800">
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
+                <x-app-logo :sidebar="true" href="{{ route('admin.dashboard') }}" />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
+            {{-- Admin Navigation Group --}}
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                <flux:sidebar.group :heading="__('Admin')" class="grid">
+                    <flux:sidebar.item icon="home" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')">
+                        {{ __('Users') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="layout-grid" :href="route('admin.products')" :current="request()->routeIs('admin.products')">
+                        {{ __('Products') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="shopping-cart" :href="route('admin.orders')" :current="request()->routeIs('admin.orders')">
+                        {{ __('Orders') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="book-open-text" :href="route('admin.coupons')" :current="request()->routeIs('admin.coupons')">
+                        {{ __('Coupons') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
 
+            {{-- Bottom Navigation --}}
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
+                <flux:sidebar.item icon="arrow-left" :href="route('home')">
+                    {{ __('Back to store') }}
                 </flux:sidebar.item>
             </flux:sidebar.nav>
 

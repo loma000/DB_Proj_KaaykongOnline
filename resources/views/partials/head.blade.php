@@ -1,5 +1,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light">
+<script>
+    document.documentElement.classList.remove('dark');
+    try { localStorage.setItem('flux.appearance', 'light'); } catch (e) {}
+</script>
 
 <title>
     {{ filled($title ?? null) ? $title.' - '.config('app.name', 'Laravel') : config('app.name', 'Laravel') }}

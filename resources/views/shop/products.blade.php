@@ -1,4 +1,4 @@
-<x-layouts::shop title="All products" active="products" :cart-count="2">
+<x-layouts::shop title="All products" active="products">
     <div class="flex flex-col px-12 pt-10">
         <p class="text-[13px] leading-[normal] text-zinc-500"><a href="{{ route('home') }}">Home</a> / Products</p>
         <h1 class="mt-2 text-[32px] font-semibold leading-[normal] tracking-[-0.32px] text-zinc-800">All products</h1>
@@ -59,7 +59,7 @@
                 'price'   => $product->price,
                 'rating'  => round($product->reviews_avg_score ?? 0, 1),
                 'reviews' => $product->reviews_count,
-                'image'   => $product->image ? asset('storage/'.$product->image) : null,
+                'image'   => !$product->productImages->IsEmpty()? asset('storage/'.$product->productImages[0]->image) : null,
             ]" cart />
         @empty
             <p class="col-span-full py-12 text-center text-sm text-zinc-500">No products found.</p>

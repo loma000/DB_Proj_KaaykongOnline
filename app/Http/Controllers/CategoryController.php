@@ -14,10 +14,10 @@ class CategoryController extends Controller
     {
         //
     }
-public function CatagoryWithProducts (Category $category){
-     $products = $category->products()->withAvg('reviews', 'score')->get();
-    
-}
+    public function CatagoryWithProducts(Category $category)
+    {
+        $products = $category->products()->withAvg('reviews', 'score')->get();
+    }
     /**
      * Show the form for creating a new resource.
      */

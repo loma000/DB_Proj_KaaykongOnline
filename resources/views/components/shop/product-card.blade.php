@@ -30,6 +30,10 @@
     <flux:heading size="lg" class="text-[15px]!">฿{{ number_format($product['price']) }}</flux:heading>
 
     @if ($cart)
-        <flux:button variant="outline" class="h-9! w-full">Add to cart</flux:button>
+         <form method="POST" action="{{ route('cart.create', $id) }}">
+        @csrf
+        <input type="hidden" name="quantity" value="1">
+        <flux:button type="submit" variant="outline" class="h-9! w-full">Add to cart</flux:button>
+    </form>
     @endif
 </div>

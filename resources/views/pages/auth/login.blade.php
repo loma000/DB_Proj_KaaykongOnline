@@ -97,8 +97,8 @@
 
             <button class="btn" type="submit">Sign in</button>
 
-            <p class="alt">New to KaayKongKruaOnline? <a href="#">Create an account</a></p>
-            <p class="alt">Are you an admin? <a href="#">Admin sign in</a></p>
+            <p class="alt">New to KaayKongKruaOnline? <a href="{{ route('register') }}">Create an account</a></p>
+            
         </form>
     </main>
 </div>

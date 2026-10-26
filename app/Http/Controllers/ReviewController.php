@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
+use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Validate;
 
 class ReviewController extends Controller
 {
@@ -25,9 +29,14 @@ class ReviewController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, Product $product)
     {
-        //
+        $validate = $request->validate([
+            'score'   => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+        Review::updateOrCreate(['user_id' => $request->user()->id, 'product_id' => $product->id], $validate);
+        return redirect()->route('products.show', $product)->with('status', 'post successful');
     }
 
     /**

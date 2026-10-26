@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Discount;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Review;
 use App\Models\Stock;
 use App\Models\User;
@@ -161,7 +162,14 @@ class KitchenwareSeeder extends Seeder
             $categoryNames = $productData['categories'];
             $quantity = $productData['quantity'];
             $reviewData = $productData['review'];
-            unset($productData['legacy_name'], $productData['categories'], $productData['quantity'], $productData['review']);
+            $image = $productData['image'];
+            unset(
+                $productData['legacy_name'],
+                $productData['categories'],
+                $productData['quantity'],
+                $productData['review'],
+                $productData['image'],
+            );
 
             $product = Product::whereIn('product_name', [$legacyName, $productData['product_name']])->first();
             if ($product) {
@@ -169,6 +177,11 @@ class KitchenwareSeeder extends Seeder
             } else {
                 $product = Product::create($productData);
             }
+
+            ProductImage::firstOrCreate([
+                'product_id' => $product->id,
+                'image' => $image,
+            ]);
 
             $product->categories()->sync(
                 collect($categoryNames)

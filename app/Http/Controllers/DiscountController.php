@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Discount;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Validate;
 
 class DiscountController extends Controller
 {
@@ -11,7 +14,8 @@ class DiscountController extends Controller
      */
     public function index()
     {
-        //
+        $discounts = Discount::all();
+        return view('admin.discount', compact('discounts'));
     }
 
     /**
@@ -27,7 +31,15 @@ class DiscountController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validate = $request->validate([
+            'coupon_name'   => 'required|string|max:255|unique:discounts,coupon_name',
+            'discount_rate' => 'required|integer|min:1|max:100',
+            'start_date'    => 'required|date',
+            'end_date'      => 'required|date|after_or_equal:start_date',
+        ]);
+        abort_unless($request->user()?->role === 'ADMIN', 403);
+        Discount::create($validate);
+        return redirect()->route('admin.discount')->with(['status' => 'create discount successful']);
     }
 
     /**
@@ -49,16 +61,26 @@ class DiscountController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Discount $discount)
     {
-        //
+        $validate = $request->validate([
+            'coupon_name'   => 'required|string|max:255|unique:discounts,coupon_name',
+            'discount_rate' => 'required|integer|min:1|max:100',
+            'start_date'    => 'required|date',
+            'end_date'      => 'required|date|after_or_equal:start_date',
+        ]);
+        abort_unless($request->user()?->role === 'ADMIN', 403);
+        $discount->update($validate);
+        return redirect()->route('admin.discount')->with(['status' => 'update discount successful']);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Discount $discount)
     {
-        //
+        abort_unless(Auth::user()?->role === 'ADMIN', 403);
+        $discount->delete();
+        return redirect()->route('admin.discount')->with(['status' => 'delete discount successful']);
     }
 }
