@@ -13,7 +13,7 @@ Route::get('account', function () {
     $orders = $user->orders()
         ->with(['products', 'discount'])
         ->latest()
-        ->take(3)
+        ->take(10)
         ->get();
 
     $reviews = $user->reviews() 
@@ -29,11 +29,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->contro
     Route::get('/', 'dashboard')->name('dashboard');
     Route::get('users', 'users')->name('users');
     Route::get('products', 'products')->name('products');
+    Route::get('categories', 'categories')->name('categories');
     Route::get('orders', 'orders')->name('orders');
     Route::get('coupons', 'coupons')->name('coupons');
     Route::patch('products/{product}', 'updateProduct')->name('products.update');
     Route::post('products', 'storeProduct')->name('products.store');
     Route::delete('products/{product}', 'destroyProduct')->name('products.destroy');
+    Route::post('categories', 'storeCategory')->name('categories.store');
+    Route::patch('categories/{category}', 'updateCategory')->name('categories.update');
+    Route::delete('categories/{category}', 'destroyCategory')->name('categories.destroy');
     Route::post('users', 'storeUser')->name('users.store');
     Route::patch('users/{user}', 'updateUser')->name('users.update');
     Route::delete('users/{user}', 'destroyUser')->name('users.destroy');

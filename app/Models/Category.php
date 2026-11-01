@@ -8,7 +8,7 @@ class Category extends Model
 {
     public $timestamps = false;
     protected $table = 'categories';
-    protected $fillable = ['category_name'];
+    protected $fillable = ['category_name', 'image'];
     function products()
     {
         return $this->belongsToMany (Product::class, 'products_categories')->withTimestamps();

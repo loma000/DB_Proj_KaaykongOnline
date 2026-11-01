@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    protected $fillable = ['product_name', 'price', 'description', 'image'];
+    protected $fillable = ['product_name', 'price', 'description'];
   public  function categories()
     {
         return $this->belongsToMany(Category::class, 'products_categories')->withTimestamps();

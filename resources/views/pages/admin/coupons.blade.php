@@ -241,13 +241,32 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100">
-                    @forelse ($coupons as $coupon)
+                     @forelse ($coupons as $coupon)
+                        @php
+                            $today = today();
+                            $startDate = \Carbon\Carbon::parse($coupon->start_date)->startOfDay();
+                            $endDate = \Carbon\Carbon::parse($coupon->end_date)->endOfDay();
+                            $isExpired = $today->gt($endDate);
+                            $isNotActive = $today->lt($startDate);
+                        @endphp
                         <tr>
                             <td class="cell-id">{{ $coupon->id }}</td>
                             <td class="cell-coupon">{{ $coupon->coupon_name }}</td>
                             <td class="cell-discount">{{ $coupon->discount_rate }}%</td>
                             <td class="cell-period">
-                                {{ \Carbon\Carbon::parse($coupon->start_date)->format('d M Y') }} – {{ \Carbon\Carbon::parse($coupon->end_date)->format('d M Y') }}
+                                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                                    <span>{{ \Carbon\Carbon::parse($coupon->start_date)->format('d M Y') }} – {{ \Carbon\Carbon::parse($coupon->end_date)->format('d M Y') }}</span>
+                                    
+                                    @if ($isExpired)
+                                        <span style="display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; line-height: normal; white-space: nowrap;">
+                                            Expired
+                                        </span>
+                                    @elseif ($isNotActive)
+                                        <span style="display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7; line-height: normal; white-space: nowrap;">
+                                            Not Active
+                                        </span>
+                                    @endif
+                                </span>
                             </td>
                             <td class="cell-used">{{ $coupon->orders_count ?? 0 }}</td>
                             <td class="cell-actions">

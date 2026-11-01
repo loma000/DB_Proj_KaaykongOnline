@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Discount;
 use App\Models\Product;
 
 use Illuminate\Http\Request;
@@ -46,7 +47,11 @@ class ProductController extends Controller
         $bestSellers = Product::query()->withAvg('reviews', 'score')
             ->withCount('reviews')->with('productImages')->orderByDesc('reviews_avg_score')->limit(5)->get();
         $catagories = Category::withCount('products')->get();
-        return view('shop.home', compact('bestSellers', 'catagories'));
+        $discounts = Discount::query()
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('end_date', '>=', today())
+            ->get();
+        return view('shop.home', compact('bestSellers', 'catagories', 'discounts'));
     }
 
     public function showProduct(Product $product)

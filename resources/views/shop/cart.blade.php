@@ -14,12 +14,13 @@
                 @forelse ($products as $product)
                     @php
                         $qty = $product->pivot->quantity;
-                        $image = $product->image;
-                        $imageUrl = $image
-                            ? (str_starts_with($image, 'http') || str_starts_with($image, '/')
-                                ? $image
-                                : asset('storage/' . $image))
-                            : null;
+                        $imageUrls = $product->productImages->
+                         pluck('image')->filter()->map(fn($image):string => str_starts_with($image, 'http://') ||
+                                str_starts_with($image, 'https://') ||
+                                str_starts_with($image, '/')
+                                    ? $image
+                                    : asset('storage/' . $image),)->values();
+                        $imageUrl = $imageUrls->first();
                     @endphp
                     <div class="flex items-center gap-4 border-b border-zinc-200 py-5">
                         <a href="{{ route('products.show', $product) }}"

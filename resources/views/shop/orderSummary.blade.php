@@ -19,47 +19,57 @@
         </section>
 
         <div class="mt-9 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6" aria-labelledby="items-heading">
-                <div class="flex flex-wrap items-start justify-between gap-2 border-b border-zinc-200 pb-4">
-                    <div>
-                        <h2 id="items-heading" class="text-base font-semibold text-zinc-900">Order details</h2>
-                        <p class="mt-1 text-sm text-zinc-500">
-                            Placed {{ $order->created_at->format('d M Y, H:i') }}
-                        </p>
+            <div class="space-y-6">
+                <h2 class="text-base font-semibold text-zinc-900">Shipping address</h2>
+                <p class="mt-1 text-sm text-zinc-500">
+                    {{ $order->shipping_address }}
+                </p>
+                <section class="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6" aria-labelledby="items-heading">
+                    <div class="flex flex-wrap items-start justify-between gap-2 border-b border-zinc-200 pb-4">
+                        <div>
+                            <h2 id="items-heading" class="text-base font-semibold text-zinc-900">Order details</h2>
+                            <p class="mt-1 text-sm text-zinc-500">
+                                Placed {{ $order->created_at->format('d M Y, H:i') }}
+                            </p>
+                        </div>
+                        <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">Confirmed</span>
                     </div>
-                    <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">Confirmed</span>
-                </div>
 
-                <div class="divide-y divide-zinc-100">
-                    @foreach ($order->products as $product)
-                        @php
-                            $image = $product->image;
-                            $imageUrl = $image
-                                ? (str_starts_with($image, 'http') || str_starts_with($image, '/')
-                                    ? $image
-                                    : asset('storage/' . $image))
-                                : null;
-                            $lineTotal = $product->pivot->price * $product->pivot->quantity;
-                        @endphp
-                        <article class="flex items-center gap-4 py-4">
-                            <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-400">
-                                @if ($imageUrl)
-                                    <img src="{{ $imageUrl }}" alt="{{ $product->product_name }}" class="size-10 object-cover">
-                                @else
-                                    No image
-                                @endif
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <h3 class="truncate text-sm font-medium text-zinc-900">{{ $product->product_name }}</h3>
-                                <p class="mt-1 text-sm text-zinc-500">
-                                    ฿{{ number_format((float) $product->pivot->price, 2) }} × {{ $product->pivot->quantity }}
-                                </p>
-                            </div>
-                            <p class="shrink-0 text-sm font-medium text-zinc-900">฿{{ number_format($lineTotal, 2) }}</p>
-                        </article>
-                    @endforeach
-                </div>
-            </section>
+                    <div class="divide-y divide-zinc-100">
+                        @foreach ($order->products as $product)
+                            @php
+                                $image = $product->image;
+                                $imageUrl = $image
+                                    ? (str_starts_with($image, 'http') || str_starts_with($image, '/')
+                                        ? $image
+                                        : asset('storage/' . $image))
+                                    : null;
+                                $lineTotal = $product->pivot->price * $product->pivot->quantity;
+                            @endphp
+                            <article class="flex items-center gap-4 py-4">
+                                <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-xs text-zinc-400">
+                                    @if ($imageUrl)
+                                        <img src="{{ $imageUrl }}" alt="{{ $product->product_name }}" class="size-10 object-cover">
+                                    @else
+                                        No image
+                                    @endif
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="truncate text-sm font-medium text-zinc-900">{{ $product->product_name }}</h3>
+                                    <p class="mt-1 text-sm text-zinc-500">
+                                        ฿{{ number_format((float) $product->pivot->price, 2) }} × {{ $product->pivot->quantity }}
+                                    </p>
+                                </div>
+                                <p class="shrink-0 text-sm font-medium text-zinc-900">฿{{ number_format($lineTotal, 2) }}</p>
+                            </article>
+                        @endforeach
+                    </div>
+                </section>
+                        <section class="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6" aria-labelledby="shipping-heading">
+                            <h2 id="shipping-heading" class="text-base font-semibold text-zinc-900">Shipping address</h2>
+                            <p class="mt-3 whitespace-pre-line text-sm text-zinc-600">{{ $order->shipping_address ?: 'No address provided' }}</p>
+                        </section>
+            <div>
 
             <aside class="h-fit rounded-xl border border-zinc-200 bg-white p-5 sm:p-6" aria-labelledby="total-heading">
                 <h2 id="total-heading" class="text-base font-semibold text-zinc-900">Payment summary</h2>

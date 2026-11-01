@@ -22,6 +22,9 @@
                     <flux:sidebar.item icon="layout-grid" :href="route('admin.products')" :current="request()->routeIs('admin.products')">
                         {{ __('Products') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="tag" :href="route('admin.categories')" :current="request()->routeIs('admin.categories')">
+                        {{ __('Categories') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="shopping-cart" :href="route('admin.orders')" :current="request()->routeIs('admin.orders')">
                         {{ __('Orders') }}
                     </flux:sidebar.item>

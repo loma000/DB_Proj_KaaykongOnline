@@ -13,7 +13,7 @@ class CartController extends Controller
     public function index(Request $request)
     {
         $cart = $request->user()->cart;
-        $products = $cart?->products()->withPivot('quantity')->get() ?? collect();
+        $products = $cart?->products()->withPivot('quantity')->with('productImages')->get() ?? collect();
 
         $count = $products->sum(fn($product) => $product->pivot->quantity);
         $subtotal = $products->sum(fn($p) => $p->price * $p->pivot->quantity);
@@ -35,7 +35,7 @@ class CartController extends Controller
     public function checkout(Request $request)
     {
         $cart = $request->user()->cart;
-        $products = $cart?->products()->withPivot('quantity')->get() ?? collect();
+        $products = $cart?->products()->with('productImages')->withPivot('quantity')->get() ?? collect();
 
         if ($products->isEmpty()) {
             return redirect()->route('cart')->with('status', 'Your cart is empty.');

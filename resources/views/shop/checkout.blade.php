@@ -14,9 +14,12 @@
                     <section>
                         <flux:heading size="lg">Shipping address</flux:heading>
                         <label for="shipping_address" class="mt-4 block text-sm font-medium text-zinc-700">Address</label>
-                        <textarea id="shipping_address" rows="3"
+                        <textarea id="shipping_address" name="shipping_address" rows="3"
                             class="mt-2 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                            placeholder="Enter your delivery address"></textarea>
+                            placeholder="Enter your delivery address">{{ auth()->user()->address}}</textarea>
+                            @error('shipping_address')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
                     </section>
 
                     <fieldset x-data="{ paymentMethod: 'card' }">
@@ -73,12 +76,16 @@
                     <div class="mt-4 max-h-72 space-y-4 overflow-y-auto">
                         @foreach ($products as $product)
                             @php
-                                $image = $product->image;
-                                $imageUrl = $image
-                                    ? (str_starts_with($image, 'http') || str_starts_with($image, '/')
-                                        ? $image
-                                        : asset('storage/' . $image))
-                                    : null;
+                                $image = $product->productImages;
+                                $imageUrls = $image->pluck('image')->filter()
+                                ->map(fn($image):string => str_starts_with($image, 'http://') ||
+                                str_starts_with($image, 'https://') ||
+                                str_starts_with($image, '/')
+                                    ? $image
+                                    : asset('storage/' . $image),)->values();
+                                   $imageUrl = $imageUrls->first();
+
+                                
                             @endphp
                             <div class="flex items-center gap-3">
                                 <div class="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-zinc-100 text-xs text-zinc-400">

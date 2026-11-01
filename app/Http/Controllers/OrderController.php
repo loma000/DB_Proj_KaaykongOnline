@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\Discount;
 use App\Models\Order;
+use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
@@ -40,6 +42,7 @@ class OrderController extends Controller
     {
         $data = $request->validate([
             'discount_id' => ['nullable', 'integer', 'exists:discounts,id'],
+            'shipping_address' => ['required', 'string', 'max:255'],
         ]);
 
         $user = $request->user();
@@ -48,6 +51,19 @@ class OrderController extends Controller
             $cart = Cart::with('products')->where('user_id', $user->id)->firstOrFail();
 
             abort_if($cart->products->isEmpty(), 422, 'Cart is empty');
+
+            foreach ($cart->products->sortBy('id') as $product) {
+                $qty = $product->pivot->quantity;
+                $stock = Stock::where('product_id', $product->id)->lockForUpdate()->first();
+
+                if (! $stock || $stock->quantity < $qty) {
+                    throw ValidationException::withMessages([
+                        'stock' => "Sorry, only " . ($stock?->quantity ?? 0) . " left of {$product->product_name}.",
+                    ]);
+                }
+
+                $stock->decrement('quantity', $qty);
+            }
 
             $subtotal = $cart->products->sum(fn ($product) => $product->price * $product->pivot->quantity);
             $discount = null;
@@ -68,6 +84,7 @@ class OrderController extends Controller
                 'user_id' => $user->id,
                 'discount_id' => $data['discount_id'] ?? null,
                 'total_price' => $total,
+                'shipping_address' => $data['shipping_address'],
             ]);
 
             foreach ($cart->products as $product) {

@@ -216,17 +216,25 @@
                 <tbody class="divide-y divide-zinc-100">
                     @forelse ($products as $product)
                         @php
-                            $imageUrl = $product->image 
-                                ? (str_starts_with($product->image, 'http') || str_starts_with($product->image, '/') 
-                                    ? $product->image 
-                                    : asset('storage/' . $product->image)) 
+                            $firstImg = $product->productImages->first()?->image;
+                            $imageUrl = $firstImg 
+                                ? (str_starts_with($firstImg, 'http') || str_starts_with($firstImg, '/') 
+                                    ? $firstImg 
+                                    : asset('storage/' . $firstImg)) 
                                 : '';
+                            $productImages = $product->productImages->map(fn ($productImage) => [
+                                'path' => $productImage->image,
+                                'url' => str_starts_with($productImage->image, 'http') || str_starts_with($productImage->image, '/')
+                                    ? $productImage->image
+                                    : asset('storage/' . $productImage->image),
+                            ])->values()->all();
                             $productData = [
                                 'id' => $product->id,
                                 'name' => $product->product_name,
                                 'price' => $product->price,
                                 'stock' => $product->stock?->quantity ?? 0,
                                 'image' => $imageUrl,
+                                'images' => $productImages,
                                 'category_id' => $product->categories->first()?->id ?? '',
                                 'description' => $product->description ?? '',
                             ];
@@ -307,13 +315,15 @@
                         <div class="form-group">
                             <label for="addPrice" class="form-label">Price (฿)</label>
                             <input type="number" 
-                                   step="any" 
-                                   id="addPrice" 
-                                   name="price" 
-                                   class="form-input" 
-                                   placeholder="e.g. 890" 
-                                   required 
-                                   min="0" />
+                                    step="any" 
+                                    id="addPrice" 
+                                    name="price" 
+                                    class="form-input" 
+                                    placeholder="e.g. 890" 
+                                    required 
+                                    min="0" 
+                                    max="10000000.00"
+                                    oninput="if(parseFloat(this.value) > 10000000) this.value = 10000000;" />
                         </div>
 
                         <div class="form-group">
@@ -329,11 +339,23 @@
                         </div>
                     </div>
 
+                    {{-- Product Pictures --}}
                     <div class="form-group">
-                        <label for="addImage" class="form-label">Product Picture (optional)</label>
+                        <label for="addImage" class="form-label">Product Pictures (optional, up to 10)</label>
                         <input type="file" 
                                id="addImage" 
-                               name="image" 
+                               name="images[]" 
+                               multiple
+                               accept="image/*" 
+                               class="form-input" 
+                               style="padding: 6px 12px; height: auto;" />
+                    </div>
+                    {{-- Thumbnail Pictures --}}
+                    <div class="form-group">
+                        <label for="addThumbnail" class="form-label">Thumbnail Pictures (optional)</label>
+                        <input type="file" 
+                               id="addThumbnail" 
+                               name="thumbnail" 
                                accept="image/*" 
                                class="form-input" 
                                style="padding: 6px 12px; height: auto;" />
@@ -401,11 +423,13 @@
                             <label for="editPrice" class="form-label">Price (฿)</label>
                             <input type="number" 
                                    step="any" 
-                                   id="editPrice" 
-                                   name="price" 
-                                   class="form-input" 
-                                   required 
-                                   min="0" />
+                                    id="editPrice" 
+                                    name="price" 
+                                    class="form-input" 
+                                    required 
+                                    min="0" 
+                                    max="10000000.00"
+                                    oninput="if(parseFloat(this.value) > 10000000) this.value = 10000000;" />
                         </div>
 
                         <div class="form-group">
@@ -420,34 +444,34 @@
                         </div>
                     </div>
 
-                    {{-- Current Picture (Horizontal Banner & Click to Enlarge) --}}
+                    {{-- Current Pictures --}}
                     <div class="form-group">
-                        <label class="form-label">Current Picture <span style="font-size: 11px; font-weight: normal; color: #71717a;">(Click to view full picture)</span></label>
+                        <label class="form-label">Current Pictures <span style="font-size: 11px; font-weight: normal; color: #71717a;">(Select Remove to delete a picture)</span></label>
                         <div id="editImageContainer" style="width: 100%;">
-                            <div style="position: relative; cursor: zoom-in; border-radius: 10px; overflow: hidden;" onclick="openLightbox(document.getElementById('editImagePreview').src)">
-                                <img id="editImagePreview" src="" alt="Current product picture" 
-                                     style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid #e4e4e7; background: #fafafa; display: block; transition: transform 0.2s ease;" 
-                                     onmouseover="this.style.transform='scale(1.02)'"
-                                     onmouseout="this.style.transform='scale(1)'" />
-                                <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(24, 24, 27, 0.75); backdrop-filter: blur(4px); color: #ffffff; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px; pointer-events: none; display: flex; align-items: center; gap: 5px;">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                                    Click for full view
-                                </div>
-                            </div>
-
+                            <div id="editImageList" class="grid grid-cols-4 gap-2"></div>
                             <div id="editNoImageNotice" 
                                  style="display: none; width: 100%; height: 100px; border: 1px dashed #d4d4d8; border-radius: 10px; align-items: center; justify-content: center; color: #a1a1aa; font-size: 13px; background: #fafafa;">
-                                No picture uploaded yet
+                                No pictures uploaded yet
                             </div>
                         </div>
                     </div>
-
-                    {{-- Replace Picture Input --}}
+                    {{-- Add Pictures Input --}}
                     <div class="form-group">
-                        <label for="editImage" class="form-label">Replace Picture (optional)</label>
+                        <label for="editImage" class="form-label">Add More Pictures (optional, up to 10)</label>
                         <input type="file" 
                                id="editImage" 
-                               name="image" 
+                               name="images[]" 
+                               multiple
+                               accept="image/*" 
+                               class="form-input" 
+                               style="padding: 6px 12px; height: auto;" />
+                    </div>
+                    {{-- Thumbnail Pictures --}}
+                    <div class="form-group">
+                        <label for="editThumbnail" class="form-label">Thumbnail Picture (optional, replaces current thumbnail)</label>
+                        <input type="file" 
+                               id="editThumbnail" 
+                               name="thumbnail" 
                                accept="image/*" 
                                class="form-input" 
                                style="padding: 6px 12px; height: auto;" />
@@ -520,7 +544,6 @@
                 category_id: categoryId,
                 description: description
             };
-
             document.getElementById('modalProductName').textContent = p.name || '—';
             document.getElementById('editProductNameInput').value = p.name || '';
             document.getElementById('editCategory').value = p.category_id || '';
@@ -528,39 +551,55 @@
             document.getElementById('editStock').value = p.stock;
             document.getElementById('editDescription').value = p.description || '';
             document.getElementById('editProductForm').action = "{{ url('admin/products') }}/" + p.id;
-
             // Reset file picker
             document.getElementById('editImage').value = '';
-
-            // Handle Current Picture preview (horizontal banner)
-            const previewImg = document.getElementById('editImagePreview');
+            const editThumb = document.getElementById('editThumbnail');
+            if (editThumb) editThumb.value = '';
+            // Render current pictures with per-image removal controls
+            const imageList = document.getElementById('editImageList');
             const noImgNotice = document.getElementById('editNoImageNotice');
-
-            if (p.image && p.image.trim() !== '') {
-                previewImg.src = p.image;
-                previewImg.parentElement.style.display = 'block';
+            const images = Array.isArray(p.images) ? p.images : (p.image ? [{ id: null, url: p.image }] : []);
+            imageList.replaceChildren();
+            for (const image of images) {
+                const imageCard = document.createElement('div');
+                imageCard.className = 'overflow-hidden rounded-md border border-zinc-200 bg-white';
+                const previewImg = document.createElement('img');
+                previewImg.src = image.url;
+                previewImg.alt = 'Current product picture';
+                previewImg.className = 'h-16 w-full cursor-zoom-in object-cover';
+                previewImg.addEventListener('click', () => openLightbox(image.url));
+                const removeLabel = document.createElement('label');
+                removeLabel.className = 'flex cursor-pointer items-center gap-1 px-1.5 py-1 text-[11px] text-zinc-700';
+                const removeCheckbox = document.createElement('input');
+                removeCheckbox.type = 'checkbox';
+                removeCheckbox.name = 'deleted_images[]';
+                removeCheckbox.value = image.path;
+                removeCheckbox.className = 'size-3.5 accent-zinc-900';
+                const removeText = document.createElement('span');
+                removeText.textContent = 'Remove';
+                removeLabel.append(removeCheckbox, removeText);
+                imageCard.append(previewImg, removeLabel);
+                imageList.append(imageCard);
+            }
+            if (images.length > 0) {
+                imageList.style.display = 'grid';
                 noImgNotice.style.display = 'none';
             } else {
-                previewImg.src = '';
-                previewImg.parentElement.style.display = 'none';
+                imageList.style.display = 'none';
                 noImgNotice.style.display = 'flex';
             }
-
             document.getElementById('editProductModal').style.display = 'flex';
         }
         function closeEditModal() {
             document.getElementById('editProductModal').style.display = 'none';
         }
-
         // Close on clicking backdrop
         window.addEventListener('click', function(e) {
             const addModal = document.getElementById('addProductModal');
             if (e.target === addModal) closeAddModal();
-
             const editModal = document.getElementById('editProductModal');
             if (e.target === editModal) closeEditModal();
         });
-
         // Close on Escape key
         window.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {

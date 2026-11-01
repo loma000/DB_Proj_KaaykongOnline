@@ -43,6 +43,10 @@
                         <dt class="mb-1 text-xs font-medium text-zinc-700">Email</dt>
                         <dd class="break-all rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600">{{ $user->email }}</dd>
                     </div>
+                    <div>
+                        <dt class="mb-1 text-xs font-medium text-zinc-700">Address</dt>
+                        <dd class="break-all rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600">{{ $user->address ?: 'No address yet'}}</dd>
+                    </div>
                 </dl>
             </section>
 
@@ -60,7 +64,8 @@
                                     <th scope="col" class="pb-2 pr-3 font-medium">Time</th>
                                     <th scope="col" class="pb-2 pr-3 font-medium">Items</th>
                                     <th scope="col" class="pb-2 pr-3 font-medium">Coupon</th>
-                                    <th scope="col" class="pb-2 text-right font-medium">Total</th>
+                                    <th scope="col" class="pb-2 pr-3 text-right font-medium">Total</th>
+                                    <th scope="col" class="pb-2 text-right font-medium">Details</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100 text-zinc-800">
@@ -73,7 +78,11 @@
                                             {{ $order->products->map(fn ($product) => $product->product_name.' × '.$product->pivot->quantity)->join(', ') ?: '—' }}
                                         </td>
                                         <td class="py-2.5 pr-3">{{ $order->discount?->coupon_name ?? '—' }}</td>
-                                        <td class="whitespace-nowrap py-2.5 text-right">฿{{ number_format((float) $order->total_price, 0) }}</td>
+                                        <td class="whitespace-nowrap py-2.5 pr-3 text-right">฿{{ number_format((float) $order->total_price, 0) }}</td>
+                                        <td class="whitespace-nowrap py-2.5 text-right">
+                                            <flux:button :href="route('orders.summary', $order)" size="xs" variant="outline">See detail</flux:button>
+                                        </td>
+
                                     </tr>
                                 @endforeach
                             </tbody>

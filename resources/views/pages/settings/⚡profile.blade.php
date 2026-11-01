@@ -14,6 +14,7 @@ new #[Title('Profile settings')] class extends Component {
 
     public string $name = '';
     public string $email = '';
+    public string $address = '';
 
     /**
      * Mount the component.
@@ -22,6 +23,7 @@ new #[Title('Profile settings')] class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->address = Auth::user()->address ?? '';
     }
 
     /**
@@ -31,17 +33,22 @@ new #[Title('Profile settings')] class extends Component {
     {
         $user = Auth::user();
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate(array_merge(
+            $this->profileRules($user->id),
+            ['address' => ['nullable', 'string', 'max:255']]
+        ));
 
-        $user->fill($validated);
+        $validated['address'] = $validated['address'] ?: null;
 
-        if ($user->isDirty('email')) {
+        $user->fill($validated);  
+ if ($user->isDirty('email')) {
             $user->email_verified_at = null;
-        }
-
+        
+      
+}
         $user->save();
 
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        Flux::toast(variant: 'success', text: __('Profile updated.')); 
     }
 
     /**
@@ -106,6 +113,8 @@ new #[Title('Profile settings')] class extends Component {
                     </div>
                 @endif
             </div>
+
+            <flux:input wire:model="address" :label="__('Address')" type="text" autocomplete="street-address" />
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">

@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use App\Models\Category;
 use App\Models\Discount;
 use App\Models\Order;
@@ -18,14 +20,14 @@ class AdminController extends Controller
             'ordersCount'      => Order::count(),
             'revenue'          => Order::sum('total_price') ?? 0,
             'recentOrders'     => Order::with('user')->latest()->take(5)->get(),
-            'lowStockProducts' => Product::whereHas('stock', fn ($q) => $q->where('quantity', '<=', 10))->with('stock')->take(5)->get(),
+            'lowStockProducts' => Product::whereHas('stock', fn($q) => $q->where('quantity', '<=', 10))->with('stock')->take(5)->get(),
         ]);
     }
 
     public function users(Request $request)
     {
         $users = User::withCount('orders')
-            ->when($request->q, fn ($q, $term) => $q->where('name', 'like', "%{$term}%"))
+            ->when($request->q, fn($q, $term) => $q->where('name', 'like', "%{$term}%"))
             ->latest()
             ->paginate(15);
 
@@ -36,26 +38,36 @@ class AdminController extends Controller
     {
         $activeCategory = $request->query('category');
         $categories = Category::pluck('category_name');
-        $products = Product::with(['categories', 'stock'])
+        $products = Product::with(['categories', 'stock', 'productImages'])
             ->when($activeCategory, function ($query, $category) {
-                $query->whereHas('categories', fn ($q) => $q->where('category_name', $category));
+                $query->whereHas('categories', fn($q) => $q->where('category_name', $category));
             })
             ->when($request->query('q'), function ($query, $term) {
                 $query->where('product_name', 'like', "%{$term}%");
             })
-            ->latest()
+            ->orderBy('id', 'asc')
             ->paginate(15)
             ->withQueryString();
         return view('pages.admin.products', compact('products', 'categories', 'activeCategory'));
     }
 
+    public function categories(Request $request)
+    {
+        $categories = Category::withCount('products')
+            ->when($request->q, fn($q, $term) => $q->where('category_name', 'like', "%{$term}%"))
+            ->orderBy('id', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+        return view('pages.admin.categories', compact('categories'));
+    }
+
     public function orders(Request $request)
     {
-        $orders = Order::with(['user', 'products', 'discount'])
-            ->when($request->q, fn ($q, $term) => $q->where('id', 'like', "%{$term}%")->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$term}%")))
-            ->when($request->period === 'today', fn ($q) => $q->whereDate('created_at', today()))
-            ->when($request->period === 'week', fn ($q) => $q->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]))
-            ->when($request->period === 'month', fn ($q) => $q->whereMonth('created_at', now()->month))
+        $orders = Order::with(['user', 'products.productImages', 'discount'])
+            ->when($request->q, fn($q, $term) => $q->where('id', 'like', "%{$term}%")->orWhereHas('user', fn($u) => $u->where('name', 'like', "%{$term}%")))
+            ->when($request->period === 'today', fn($q) => $q->whereDate('created_at', today()))
+            ->when($request->period === 'week', fn($q) => $q->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]))
+            ->when($request->period === 'month', fn($q) => $q->whereMonth('created_at', now()->month))
             ->latest()
             ->paginate(15);
         $activePeriod = $request->query('period', 'all');
@@ -66,9 +78,9 @@ class AdminController extends Controller
     public function coupons(Request $request)
     {
         $coupons = Discount::withCount('orders')
-            ->when($request->q, fn ($q, $term) => $q->where('coupon_name', 'like', "%{$term}%"))
-            ->when($request->status === 'active', fn ($q) => $q->whereDate('end_date', '>=', today()))
-            ->when($request->status === 'expired', fn ($q) => $q->whereDate('end_date', '<', today()))
+            ->when($request->q, fn($q, $term) => $q->where('coupon_name', 'like', "%{$term}%"))
+            ->when($request->status === 'active', fn($q) => $q->whereDate('start_date', '<=', today())->whereDate('end_date', '>=', today()))
+            ->when($request->status === 'expired', fn($q) => $q->whereDate('end_date', '<', today()))
             ->paginate(15);
         $activeStatus = $request->query('status', 'all');
 
@@ -78,27 +90,23 @@ class AdminController extends Controller
     public function updateProduct(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'product_name' => 'required|string|max:255',
-            'category_id'  => 'required|exists:categories,id',
-            'price'        => 'required|numeric|min:0',
-            'stock'        => 'required|integer|min:0',
-            'description'  => 'nullable|string',
-            'image'        => 'nullable|image|max:5120',
+            'product_name'   => 'required|string|max:255',
+            'category_id'    => 'required|exists:categories,id',
+            'price'          => 'required|numeric|min:0|max:10000000',
+            'stock'          => 'required|integer|min:0',
+            'description'    => 'nullable|string',
+            'thumbnail'      => 'nullable|image|max:5120',
+            'images'         => 'nullable|array|max:10',
+            'images.*'       => 'image|max:5120',
+            'deleted_images' => 'nullable|array',
+            'deleted_images.*' => 'string|max:255',
         ]);
-        $updateData = [
+        // 1. Update product basic details
+        $product->update([
             'product_name' => $validated['product_name'],
-            'price'        => $validated['price'],
+            'price' => $validated['price'],
             'description'  => $validated['description'] ?? '',
-        ];
-        // If a replacement image was uploaded, save it and remove old image if present
-        if ($request->hasFile('image')) {
-            if ($product->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
-            }
-            $updateData['image'] = $request->file('image')->store('products', 'public');
-        }
-        // 1. Update product details
-        $product->update($updateData);
+        ]);
         // 2. Sync category
         $product->categories()->sync([$validated['category_id']]);
         // 3. Update stock quantity
@@ -106,41 +114,75 @@ class AdminController extends Controller
             ['product_id' => $product->id],
             ['quantity' => $validated['stock']]
         );
+        // 4. Remove selected existing pictures
+        $imagesToDelete = $product->productImages()
+            ->whereIn('image', $validated['deleted_images'] ?? [])
+            ->get();
+        foreach ($imagesToDelete as $productImage) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($productImage->image);
+        }
+        $product->productImages()
+            ->whereIn('image', $imagesToDelete->pluck('image'))
+            ->delete();
+        // 5. If a new thumbnail was uploaded, replace the old thumbnail
+        if ($request->hasFile('thumbnail')) {
+            // Find and delete the current thumbnail from disk and database
+            $oldThumbnail = $product->productImages()->orderBy('image', 'asc')->first();
+            if ($oldThumbnail) {
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldThumbnail->image)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldThumbnail->image);
+                }
+                $product->productImages()->where('image', $oldThumbnail->image)->delete();
+            }
+            // Save the new thumbnail with '0_thumb_' prefix so it is ordered first
+            $thumb = $request->file('thumbnail');
+            $ext = $thumb->getClientOriginalExtension() ?: 'jpg';
+            $thumbName = '0_thumb_' . time() . '_' . \Illuminate\Support\Str::random(8) . '.' . $ext;
+            $thumbPath = $thumb->storeAs('products', $thumbName, 'public');
+            $product->productImages()->create([
+                'image' => $thumbPath,
+            ]);
+        }
+        // 6. Add any new gallery pictures with '1_img_' prefix
+        foreach ($request->file('images', []) as $index => $image) {
+            $ext = $image->getClientOriginalExtension() ?: 'jpg';
+            $imgName = '1_img_' . time() . '_' . $index . '_' . \Illuminate\Support\Str::random(8) . '.' . $ext;
+            $newPath = $image->storeAs('products', $imgName, 'public');
+            $product->productImages()->create([
+                'image' => $newPath,
+            ]);
+        }
         return back()->with('status', 'Product updated successfully.');
     }
-
     public function destroyProduct(Product $product)
     {
-        // 1. Delete product image from storage if present
-        if ($product->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+        // Delete all images for this product from disk
+        foreach ($product->productImages as $img) {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($img->image)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($img->image);
+            }
         }
-        // 2. Delete product record (cascades to stock, categories, etc.)
+        // Delete product record (cascades to product_images, stock, categories)
         $product->delete();
         return back()->with('status', 'Product deleted successfully.');
     }
-
     public function storeProduct(Request $request)
     {
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'category_id'  => 'required|exists:categories,id',
-            'price'        => 'required|numeric|min:0',
+            'price'        => 'required|numeric|min:0|max:10000000',
             'stock'        => 'required|integer|min:0',
             'description'  => 'nullable|string',
-            'image'        => 'nullable|image|max:5120', // Up to 5MB
+            'thumbnail'    => 'nullable|image|max:5120',
+            'images'       => 'nullable|array|max:10',
+            'images.*'     => 'image|max:5120',
         ]);
-        // Store the uploaded picture into storage/app/public/products
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('products', 'public');
-        }
-        // 1. Create product with picture path
+        // 1. Create product (without 'image' column)
         $product = Product::create([
             'product_name' => $validated['product_name'],
-            'price'        => $validated['price'],
+            'price' => $validated['price'],
             'description'  => !empty($validated['description']) ? $validated['description'] : $validated['product_name'],
-            'image'        => $imagePath,
         ]);
         // 2. Attach category
         $product->categories()->sync([$validated['category_id']]);
@@ -148,7 +190,74 @@ class AdminController extends Controller
         $product->stock()->create([
             'quantity' => $validated['stock'],
         ]);
+        // 4. Save Thumbnail Picture first (prefixed with 0_thumb_ so it is always ordered first in MySQL)
+        if ($request->hasFile('thumbnail')) {
+            $thumb = $request->file('thumbnail');
+            $ext = $thumb->getClientOriginalExtension() ?: 'jpg';
+            $thumbName = '0_thumb_' . time() . '_' . \Illuminate\Support\Str::random(8) . '.' . $ext;
+            $thumbPath = $thumb->storeAs('products', $thumbName, 'public');
+            $product->productImages()->create([
+                'image' => $thumbPath,
+            ]);
+        }
+        // 5. Save Product Pictures (prefixed with 1_img_ so they come after the thumbnail)
+        $images = $request->file('images', []);
+        foreach ($images as $index => $image) {
+            $ext = $image->getClientOriginalExtension() ?: 'jpg';
+            // If no separate thumbnail was uploaded, treat the first picture as the thumbnail
+            $prefix = (!$request->hasFile('thumbnail') && $index === 0) ? '0_thumb_' : '1_img_';
+            $imgName = $prefix . time() . '_' . $index . '_' . \Illuminate\Support\Str::random(8) . '.' . $ext;
+            $imagePath = $image->storeAs('products', $imgName, 'public');
+            $product->productImages()->create([
+                'image' => $imagePath,
+            ]);
+        }
         return back()->with('status', 'Product created successfully.');
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'category_name' => 'required|string|max:255|unique:categories,category_name',
+            'image'         => 'nullable|image|max:5120', // Up to 5MB
+        ]);
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('categories', 'public');
+        }
+        Category::create([
+            'category_name' => trim($validated['category_name']),
+            'image'         => $imagePath,
+        ]);
+        return back()->with('status', 'Category created successfully.');
+    }
+    public function updateCategory(Request $request, Category $category)
+    {
+        $validated = $request->validate([
+            'category_name' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('categories', 'category_name')->ignore($category->id)],
+            'image'         => 'nullable|image|max:5120',
+        ]);
+        $updateData = [
+            'category_name' => trim($validated['category_name']),
+        ];
+        // If a new replacement picture is uploaded, remove old image and save new one
+        if ($request->hasFile('image')) {
+            if ($category->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($category->image)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->image);
+            }
+            $updateData['image'] = $request->file('image')->store('categories', 'public');
+        }
+        $category->update($updateData);
+        return back()->with('status', 'Category updated successfully.');
+    }
+    public function destroyCategory(Category $category)
+    {
+        // Delete image from disk if present
+        if ($category->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($category->image)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($category->image);
+        }
+        $category->delete();
+        return back()->with('status', 'Category deleted successfully.');
     }
 
     public function updateUser(Request $request, User $user)
@@ -220,7 +329,7 @@ class AdminController extends Controller
         ]);
         return back()->with('status', 'Coupon created successfully.');
     }
-    
+
     public function updateCoupon(Request $request, $id)
     {
         $coupon = Discount::findOrFail($id);

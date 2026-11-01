@@ -21,39 +21,78 @@
 
 <x-layouts::shop :title="$product->product_name" active="products" :member="auth()->check()">
     <div class="flex flex-col gap-8 px-12 pb-16 pt-8">
-        {{-- Breadcrumb --}}
-        <p class="text-[13px] leading-[normal] text-zinc-500">
-            <a href="{{ route('home') }}">Home</a> /
-            <a href="{{ route('products.index') }}">Products</a> /
-            @if ($category)
-                <a href="{{ route('products.index', ['category' => $category]) }}">{{ $category }}</a> /
+        {{-- Flash status notification --}}
+        @if (session('status'))
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px 16px; border-radius: 8px; font-size: 13px;">
+                {{ session('status') }}
+            </div>
+        @endif
+        {{-- Top Bar: Breadcrumb (Left) & Admin Edit Button (Top Right) --}}
+        <div class="flex items-center justify-between gap-4">
+            <p class="text-[13px] leading-[normal] text-zinc-500">
+                <a href="{{ route('home') }}">Home</a> /
+                <a href="{{ route('products.index') }}">Products</a> /
+                @if ($category)
+                    <a href="{{ route('products.index', ['category' => $category]) }}">{{ $category }}</a> /
+                @endif
+                {{ $product->product_name }}
+            </p>
+            @if (auth()->check() && auth()->user()->role === 'ADMIN')
+                <button type="button" 
+                        onclick="openEditModal()" 
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-5 py-1.5 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 hover:border-zinc-300">
+                    <svg class="size-3.5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Edit product
+                </button>
             @endif
-            {{ $product->product_name }}
-        </p>
+        </div>
 
         {{-- Top --}}
         <section class="flex items-start gap-12">
             {{-- Gallery --}}
-            <div class="flex min-w-0 flex-1 flex-col gap-3">
+            <div class="flex min-w-0 flex-1 flex-col gap-3" x-data="{ activeImage: 0, images: @js($imageUrls->all()) }">
                 <div
-                    class="flex h-[460px] w-full items-center justify-center overflow-hidden rounded-2xl bg-zinc-100 text-xs text-zinc-400">
+                    class="relative flex h-[460px] w-full items-center justify-center overflow-hidden rounded-2xl bg-zinc-100 text-xs text-zinc-400">
                     @if ($imageUrl)
-                        <img src="{{ $imageUrl }}" alt="{{ $product->product_name }}"
+                        <img x-bind:src="images[activeImage]" alt="{{ $product->product_name }}"
                             class="size-full object-cover" />
                     @else
                         Product image
                     @endif
+
+                    @if ($imageUrls->count() > 1)
+                        <button type="button" @click="activeImage = (activeImage - 1 + images.length) % images.length"
+                            aria-label="Previous product image"
+                            class="absolute top-1/2 z-10 flex size-10 sm:size-11 -translate-y-1/2 items-center justify-center rounded-full border border-black bg-white text-black shadow-md hover:bg-zinc-100"
+                            style="left: 0.5rem;">
+                            <span aria-hidden="true" class="text-2xl leading-none">&larr;</span>
+                        </button>
+                        <button type="button" @click="activeImage = (activeImage + 1) % images.length"
+                            aria-label="Next product image"
+                            class="absolute top-1/2 z-10 flex size-10 sm:size-11 -translate-y-1/2 items-center justify-center rounded-full border border-black bg-white text-black shadow-md hover:bg-zinc-100"
+                            style="right: 0.5rem;">
+                            <span aria-hidden="true" class="text-2xl leading-none">&rarr;</span>
+                        </button>
+                    @endif
                 </div>
                 <div class="flex gap-3" aria-label="Product images">
-                    @foreach ($thumbs as $thumb)
-                        <div
-                            class="flex size-20 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-[11px] text-zinc-400">
-                            @if ($thumb)
+                    @foreach ($thumbs as $index => $thumb)
+                        @if ($thumb)
+                            <button type="button" @click="activeImage = {{ $index }}"
+                                aria-label="Show product image {{ $index + 1 }}"
+                                :aria-pressed="activeImage === {{ $index }}"
+                                class="size-20 overflow-hidden rounded-lg bg-zinc-100"
+                                :class="activeImage === {{ $index }} ? 'ring-2 ring-zinc-800' : 'border border-zinc-200'">
                                 <img src="{{ $thumb }}" alt="" class="size-full object-cover" />
-                            @else
+                            </button>
+                        @else
+                            <div
+                                class="flex size-20 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 text-[11px] text-zinc-400">
                                 Img
-                            @endif
-                        </div>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
@@ -125,7 +164,6 @@
                     @enderror
                 </form>
             </div>
-    </div>
     </section>
 
     {{-- Reviews --}}
@@ -238,4 +276,250 @@
         </div>
     </section>
     </div>
+
+    @if (auth()->check() && auth()->user()->role === 'ADMIN')
+        {{-- EDIT PRODUCT MODAL POPUP --}}
+        <div id="editProductModal" class="modal-overlay" style="display: none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div>
+                        <h3 class="modal-title">Edit Product</h3>
+                        <p class="modal-subtitle">{{ $product->product_name }}</p>
+                    </div>
+                    <button type="button" class="modal-close" onclick="closeEditModal()">&times;</button>
+                </div>
+                <form method="POST" action="{{ url('admin/products/' . $product->id) }}" enctype="multipart/form-data">
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-body">
+                        {{-- Product Name --}}
+                        <div class="form-group">
+                            <label for="editProductName" class="form-label">Product Name</label>
+                            <input type="text" 
+                                   id="editProductName" 
+                                   name="product_name" 
+                                   class="form-input" 
+                                   value="{{ old('product_name', $product->product_name) }}" 
+                                   required />
+                        </div>
+                        {{-- Category --}}
+                        <div class="form-group">
+                            <label for="editCategory" class="form-label">Category</label>
+                            <select id="editCategory" name="category_id" class="form-input" required>
+                                <option value="" disabled>Select a category</option>
+                                @foreach (\App\Models\Category::all() as $cat)
+                                    <option value="{{ $cat->id }}" {{ ($product->categories->first()?->id == $cat->id) ? 'selected' : '' }}>
+                                        {{ $cat->category_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        {{-- Price & Stock --}}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label for="editPrice" class="form-label">Price (฿)</label>
+                                <input type="number" 
+                                        step="any" 
+                                        id="editPrice" 
+                                        name="price" 
+                                        class="form-input" 
+                                        value="{{ old('price', $product->price) }}" 
+                                        required 
+                                        min="0" 
+                                        max="10000000.00"
+                                        oninput="if(parseFloat(this.value) > 10000000) this.value = 10000000;" />
+                            </div>
+                            <div class="form-group">
+                                <label for="editStock" class="form-label">Stock quantity</label>
+                                <input type="number" 
+                                       step="1" 
+                                       id="editStock" 
+                                       name="stock" 
+                                       class="form-input" 
+                                       value="{{ old('stock', $stockCount ?? 0) }}" 
+                                       required 
+                                       min="0" />
+                            </div>
+                        </div>
+                        {{-- Current Pictures --}}
+                        <div class="form-group">
+                            <label class="form-label">Current Pictures <span style="font-size: 11px; font-weight: normal; color: #71717a;">(Select Remove to delete a picture)</span></label>
+                            <div style="width: 100%;">
+                                @if ($product->productImages->isNotEmpty())
+                                    <div class="grid grid-cols-4 gap-2">
+                                        @foreach ($product->productImages as $pImg)
+                                            @php
+                                                $pUrl = str_starts_with($pImg->image, 'http') || str_starts_with($pImg->image, '/')
+                                                    ? $pImg->image
+                                                    : asset('storage/' . $pImg->image);
+                                            @endphp
+                                            <div class="overflow-hidden rounded-md border border-zinc-200 bg-white">
+                                                <img src="{{ $pUrl }}" alt="Product picture" class="h-16 w-full object-cover" />
+                                                <label class="flex cursor-pointer items-center gap-1 px-1.5 py-1 text-[11px] text-zinc-700">
+                                                    <input type="checkbox" name="deleted_images[]" value="{{ $pImg->image }}" class="size-3.5 accent-zinc-900" />
+                                                    <span>Remove</span>
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div style="width: 100%; height: 80px; border: 1px dashed #d4d4d8; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #a1a1aa; font-size: 13px; background: #fafafa;">
+                                        No pictures uploaded yet
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        {{-- Add More Pictures --}}
+                        <div class="form-group">
+                            <label for="editImages" class="form-label">Add More Pictures (optional, up to 10)</label>
+                            <input type="file" 
+                                   id="editImages" 
+                                   name="images[]" 
+                                   multiple
+                                   accept="image/*" 
+                                   class="form-input" 
+                                   style="padding: 6px 12px; height: auto;" />
+                        </div>
+                        {{-- Thumbnail Pictures --}}
+                        <div class="form-group">
+                            <label for="editThumbnail" class="form-label">Thumbnail Picture (optional, replaces current thumbnail)</label>
+                            <input type="file" 
+                                   id="editThumbnail" 
+                                   name="thumbnail" 
+                                   accept="image/*" 
+                                   class="form-input" 
+                                   style="padding: 6px 12px; height: auto;" />
+                        </div>
+                        {{-- Description --}}
+                        <div class="form-group">
+                            <label for="editDescription" class="form-label">Description (optional)</label>
+                            <textarea id="editDescription" 
+                                      name="description" 
+                                      class="form-input" 
+                                      rows="3" 
+                                      style="height: auto; padding: 8px 12px; resize: vertical;" 
+                                      placeholder="Brief description of the product">{{ old('description', $product->description) }}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn-save">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <style>
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(2px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                padding: 16px;
+            }
+            .modal-card {
+                background: #ffffff;
+                border-radius: 16px;
+                width: 100%;
+                max-width: 500px;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                animation: modalFadeIn 0.15s ease-out;
+            }
+            @keyframes modalFadeIn {
+                from { opacity: 0; transform: scale(0.96); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            .modal-header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                padding: 20px 24px 16px;
+                border-bottom: 1px solid #f4f4f5;
+            }
+            .modal-title { font-size: 18px; font-weight: 600; color: #18181b; margin: 0; }
+            .modal-subtitle { font-size: 13px; color: #71717a; margin: 4px 0 0; }
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 22px;
+                line-height: 1;
+                color: #a1a1aa;
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 6px;
+            }
+            .modal-close:hover { color: #18181b; background: #f4f4f5; }
+            .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-height: 75vh; overflow-y: auto; text-align: left; }
+            .form-group { display: flex; flex-direction: column; gap: 6px; }
+            .form-label { font-size: 13px; font-weight: 500; color: #3f3f46; }
+            .form-input {
+                width: 100%;
+                height: 38px;
+                border: 1px solid #e4e4e7;
+                border-radius: 8px;
+                padding: 0 12px;
+                font-size: 14px;
+                color: #18181b;
+                background: #ffffff;
+                outline: none;
+                box-sizing: border-box;
+                transition: border-color 0.15s;
+            }
+            .form-input:focus { border-color: #18181b; }
+            .modal-footer {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 10px;
+                padding: 16px 24px 20px;
+                border-top: 1px solid #f4f4f5;
+                background: #fafafa;
+            }
+            .btn-cancel {
+                height: 36px;
+                padding: 0 14px;
+                border-radius: 8px;
+                background: #ffffff;
+                color: #52525b;
+                border: 1px solid #e4e4e7;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .btn-cancel:hover { background: #f4f4f5; color: #18181b; }
+            .btn-save {
+                height: 36px;
+                padding: 0 16px;
+                border-radius: 8px;
+                background: #18181b;
+                color: #ffffff;
+                border: none;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            .btn-save:hover { background: #27272a; }
+        </style>
+        <script>
+            function openEditModal() {
+                document.getElementById('editProductModal').style.display = 'flex';
+            }
+            function closeEditModal() {
+                document.getElementById('editProductModal').style.display = 'none';
+            }
+            window.addEventListener('click', function(e) {
+                const modal = document.getElementById('editProductModal');
+                if (e.target === modal) closeEditModal();
+            });
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeEditModal();
+            });
+        </script>
+    @endif
 </x-layouts::shop>

@@ -39,7 +39,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '10-Inch Cast Iron Skillet',
                 'price' => 890,
                 'description' => 'A heat-retaining cast iron skillet, ideal for frying and searing.',
-                'image' => 'products/cast-iron-skillets.jpg',
+                'images' => [
+                    'products/cast-iron-skillets.jpg',
+                    'products/ceramic-frying-pan.jpg',
+                    'products/stainless-pans.jpg',
+                ],
                 'quantity' => 24,
                 'categories' => ['Pots and Pans'],
                 'review' => ['score' => 5, 'comment' => 'Heats evenly and holds its temperature well. Great for searing.'],
@@ -49,7 +53,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '28 cm Ceramic Nonstick Frying Pan',
                 'price' => 690,
                 'description' => 'A ceramic nonstick pan compatible with gas and electric stovetops.',
-                'image' => 'products/ceramic-frying-pan.jpg',
+                'images' => [
+                    'products/ceramic-frying-pan.jpg',
+                    'products/cast-iron-skillets.jpg',
+                    'products/stainless-pans.jpg',
+                ],
                 'quantity' => 32,
                 'categories' => ['Pots and Pans'],
                 'review' => ['score' => 4, 'comment' => 'Food releases easily and cleanup is quick.'],
@@ -59,7 +67,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '24 cm Stainless Steel Pot with Lid',
                 'price' => 790,
                 'description' => 'A durable, heavy-gauge stainless steel pot with a glass lid, easy to clean.',
-                'image' => 'products/stainless-stockpot.jpg',
+                'images' => [
+                    'products/stainless-stockpot.jpg',
+                    'products/stainless-pans.jpg',
+                    'products/cast-iron-skillets.jpg',
+                ],
                 'quantity' => 18,
                 'categories' => ['Pots and Pans'],
                 'review' => ['score' => 5, 'comment' => 'Solid construction and the glass lid is very useful.'],
@@ -69,7 +81,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '18 cm Stainless Steel Saucepan',
                 'price' => 450,
                 'description' => 'A compact saucepan for reheating food and making soup.',
-                'image' => 'products/stainless-pans.jpg',
+                'images' => [
+                    'products/stainless-pans.jpg',
+                    'products/stainless-stockpot.jpg',
+                    'products/ceramic-frying-pan.jpg',
+                ],
                 'quantity' => 27,
                 'categories' => ['Pots and Pans'],
                 'review' => ['score' => 4, 'comment' => 'A handy size for sauces and small portions.'],
@@ -79,7 +95,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '5-Piece Kitchen Knife Set',
                 'price' => 1200,
                 'description' => 'A stainless steel knife set for slicing, chopping, and peeling, with a storage block.',
-                'image' => 'products/kitchen-knife-set.jpg',
+                'images' => [
+                    'products/kitchen-knife-set.jpg',
+                    'products/wooden-cutting-board.jpg',
+                    'products/wooden-utensils.jpg',
+                ],
                 'quantity' => 12,
                 'categories' => ['Knives and Food Preparation'],
                 'review' => ['score' => 5, 'comment' => 'Sharp, comfortable to hold, and the block keeps everything tidy.'],
@@ -89,7 +109,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => 'Rubberwood Cutting Board',
                 'price' => 320,
                 'description' => 'A sturdy rubberwood cutting board with a smooth surface for food preparation.',
-                'image' => 'products/wooden-cutting-board.jpg',
+                'images' => [
+                    'products/wooden-cutting-board.jpg',
+                    'products/kitchen-knife-set.jpg',
+                    'products/wooden-utensils.jpg',
+                ],
                 'quantity' => 40,
                 'categories' => ['Knives and Food Preparation', 'Wooden Utensils'],
                 'review' => ['score' => 4, 'comment' => 'Sturdy board with plenty of room for everyday prep.'],
@@ -99,7 +123,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => 'Teak Wood Spatula',
                 'price' => 150,
                 'description' => 'A lightweight teak spatula that will not scratch cookware.',
-                'image' => 'products/wooden-utensils.jpg',
+                'images' => [
+                    'products/wooden-utensils.jpg',
+                    'products/wooden-cutting-board.jpg',
+                    'products/kitchen-knife-set.jpg',
+                ],
                 'quantity' => 55,
                 'categories' => ['Wooden Utensils'],
                 'review' => ['score' => 5, 'comment' => 'Lightweight and gentle on my nonstick pans.'],
@@ -109,7 +137,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => 'Bamboo Ladle',
                 'price' => 95,
                 'description' => 'An easy-to-grip bamboo ladle for serving and stirring.',
-                'image' => 'products/wooden-utensils.jpg',
+                'images' => [
+                    'products/wooden-utensils.jpg',
+                    'products/wooden-cutting-board.jpg',
+                    'products/kitchen-knife-set.jpg',
+                ],
                 'quantity' => 48,
                 'categories' => ['Wooden Utensils'],
                 'review' => ['score' => 4, 'comment' => 'Comfortable to use and a nice simple kitchen staple.'],
@@ -119,7 +151,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => 'Nonstick Baking Tray',
                 'price' => 280,
                 'description' => 'A nonstick baking tray that releases baked goods easily and cleans up quickly.',
-                'image' => 'products/baking-tray.jpg',
+                'images' => [
+                    'products/baking-tray.jpg',
+                    'products/stainless-pans.jpg',
+                    'products/glass-food-jars.jpg',
+                ],
                 'quantity' => 30,
                 'categories' => ['Bakeware'],
                 'review' => ['score' => 5, 'comment' => 'Bakes evenly and is easy to clean after use.'],
@@ -129,7 +165,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '8-Inch Round Cake Pan',
                 'price' => 220,
                 'description' => 'An aluminum cake pan that distributes heat evenly.',
-                'image' => 'products/baking-tray.jpg',
+                'images' => [
+                    'products/baking-tray.jpg',
+                    'products/stainless-pans.jpg',
+                    'products/glass-food-jars.jpg',
+                ],
                 'quantity' => 26,
                 'categories' => ['Bakeware'],
                 'review' => ['score' => 4, 'comment' => 'Good size for a small cake and heats evenly.'],
@@ -139,7 +179,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '3-Piece Stainless Steel Mixing Bowl Set',
                 'price' => 390,
                 'description' => 'A set of three mixing bowls in different sizes that nest for compact storage.',
-                'image' => 'products/stainless-pans.jpg',
+                'images' => [
+                    'products/stainless-pans.jpg',
+                    'products/baking-tray.jpg',
+                    'products/glass-food-jars.jpg',
+                ],
                 'quantity' => 21,
                 'categories' => ['Bakeware', 'Food Storage'],
                 'review' => ['score' => 5, 'comment' => 'Useful range of sizes and they stack neatly in the cupboard.'],
@@ -149,7 +193,11 @@ class KitchenwareSeeder extends Seeder
                 'product_name' => '1 L Glass Food Storage Container',
                 'price' => 180,
                 'description' => 'A glass container with a lid for food storage and microwave reheating.',
-                'image' => 'products/glass-food-jars.jpg',
+                'images' => [
+                    'products/glass-food-jars.jpg',
+                    'products/stainless-pans.jpg',
+                    'products/baking-tray.jpg',
+                ],
                 'quantity' => 60,
                 'categories' => ['Food Storage'],
                 'review' => ['score' => 4, 'comment' => 'Convenient for leftovers and easy to reheat in the microwave.'],
@@ -162,13 +210,13 @@ class KitchenwareSeeder extends Seeder
             $categoryNames = $productData['categories'];
             $quantity = $productData['quantity'];
             $reviewData = $productData['review'];
-            $image = $productData['image'];
+            $images = $productData['images'];
             unset(
                 $productData['legacy_name'],
                 $productData['categories'],
                 $productData['quantity'],
                 $productData['review'],
-                $productData['image'],
+                $productData['images'],
             );
 
             $product = Product::whereIn('product_name', [$legacyName, $productData['product_name']])->first();
@@ -178,10 +226,12 @@ class KitchenwareSeeder extends Seeder
                 $product = Product::create($productData);
             }
 
-            ProductImage::firstOrCreate([
-                'product_id' => $product->id,
-                'image' => $image,
-            ]);
+            foreach ($images as $image) {
+                ProductImage::firstOrCreate([
+                    'product_id' => $product->id,
+                    'image' => $image,
+                ]);
+            }
 
             $product->categories()->sync(
                 collect($categoryNames)

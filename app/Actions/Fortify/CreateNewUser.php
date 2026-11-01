@@ -21,12 +21,16 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             ...$this->profileRules(),
-            'password' => $this->passwordRules(),
+            'address' => ['nullable', 'string', 'max:255'],
+            
+            'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::default()],
+            'terms' => ['accepted'],
         ])->validate();
 
         return User::create([
             'name' => $input['name'],
-            'email' => $input['email'],
+            'email' => strtolower($input['email']),
+            'address' => $input['address'] ?? null,
             'password' => $input['password'],
         ]);
     }

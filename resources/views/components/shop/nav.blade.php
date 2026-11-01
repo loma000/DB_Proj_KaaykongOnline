@@ -17,15 +17,20 @@
     <flux:navbar class="gap-2">
         <flux:navbar.item :href="route('home')" :current="$active === 'home'">Home</flux:navbar.item>
         <flux:navbar.item :href="route('products.index')" :current="$active === 'products'">Products</flux:navbar.item>
-        <flux:navbar.item :href="route('products.index', ['deals' => 1])" :current="$active === 'deals'">Deals
-        </flux:navbar.item>
+       @auth
+        @if (Auth::user()->role == 'ADMIN')
+             <flux:navbar.item :href="route('admin.dashboard' )" :current="$active === 'dashboard'">Dashboard</flux:navbar.item>
+        @endif
+       @endauth 
+       
+        
     </flux:navbar>
 
     <flux:spacer />
 
     <div class="flex items-center gap-2">
-        <flux:button :href="route('products.index')" variant="ghost" size="sm" icon="magnifying-glass"
-            aria-label="Search" />
+        {{-- <flux:button :href="route('products.index')" variant="ghost" size="sm" icon="magnifying-glass"
+            aria-label="Search" /> --}}
 
 
         <flux:button :href="route('cart')" variant="ghost" size="sm" aria-label="Cart"
