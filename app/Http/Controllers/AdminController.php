@@ -90,25 +90,30 @@ class AdminController extends Controller
     public function updateProduct(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'product_name'   => 'required|string|max:255',
-            'category_id'    => 'required|exists:categories,id',
-            'price'          => 'required|numeric|min:0|max:10000000',
-            'stock'          => 'required|integer|min:0',
-            'description'    => 'nullable|string',
-            'thumbnail'      => 'nullable|image|max:5120',
-            'images'         => 'nullable|array|max:10',
-            'images.*'       => 'image|max:5120',
-            'deleted_images' => 'nullable|array',
+            'product_name'     => 'required|string|max:255',
+            'category_ids'     => 'required|array|min:1',
+            'category_ids.*'   => 'exists:categories,id',
+            'price'            => 'required|numeric|min:0|max:10000000',
+            'stock'            => 'required|integer|min:0',
+            'description'      => 'nullable|string',
+            'thumbnail'        => 'nullable|image|max:5120',
+            'images'           => 'nullable|array|max:10',
+            'images.*'         => 'image|max:5120',
+            'deleted_images'   => 'nullable|array',
             'deleted_images.*' => 'string|max:255',
+        ], [
+            'category_ids.required' => 'Please select at least one category.',
+            'category_ids.min'      => 'Please select at least one category.',
         ]);
         // 1. Update product basic details
         $product->update([
             'product_name' => $validated['product_name'],
-            'price' => $validated['price'],
+            'price'        => $validated['price'],
             'description'  => $validated['description'] ?? '',
         ]);
-        // 2. Sync category
-        $product->categories()->sync([$validated['category_id']]);
+        // 2. Sync multiple categories
+        $categoryIds = $request->input('category_ids') ?? ($request->filled('category_id') ? [$request->input('category_id')] : []);
+        $product->categories()->sync($categoryIds);
         // 3. Update stock quantity
         $product->stock()->updateOrCreate(
             ['product_id' => $product->id],
@@ -169,23 +174,28 @@ class AdminController extends Controller
     public function storeProduct(Request $request)
     {
         $validated = $request->validate([
-            'product_name' => 'required|string|max:255',
-            'category_id'  => 'required|exists:categories,id',
-            'price'        => 'required|numeric|min:0|max:10000000',
-            'stock'        => 'required|integer|min:0',
-            'description'  => 'nullable|string',
-            'thumbnail'    => 'nullable|image|max:5120',
-            'images'       => 'nullable|array|max:10',
-            'images.*'     => 'image|max:5120',
+            'product_name'     => 'required|string|max:255',
+            'category_ids'     => 'required|array|min:1',
+            'category_ids.*'   => 'exists:categories,id',
+            'price'            => 'required|numeric|min:0|max:10000000',
+            'stock'            => 'required|integer|min:0',
+            'description'      => 'nullable|string',
+            'thumbnail'        => 'nullable|image|max:5120',
+            'images'           => 'nullable|array|max:10',
+            'images.*'         => 'image|max:5120',
+        ], [
+            'category_ids.required' => 'Please select at least one category.',
+            'category_ids.min'      => 'Please select at least one category.',
         ]);
-        // 1. Create product (without 'image' column)
+        // 1. Create product
         $product = Product::create([
             'product_name' => $validated['product_name'],
-            'price' => $validated['price'],
+            'price'        => $validated['price'],
             'description'  => !empty($validated['description']) ? $validated['description'] : $validated['product_name'],
         ]);
-        // 2. Attach category
-        $product->categories()->sync([$validated['category_id']]);
+        // 2. Attach categories
+        $categoryIds = $request->input('category_ids') ?? ($request->filled('category_id') ? [$request->input('category_id')] : []);
+        $product->categories()->sync($categoryIds);
         // 3. Create initial stock
         $product->stock()->create([
             'quantity' => $validated['stock'],

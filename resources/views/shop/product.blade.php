@@ -99,10 +99,15 @@
 
             {{-- Info --}}
             <div class="flex min-w-0 flex-1 flex-col items-start gap-4" x-data="{ quantity: 1, max: {{ max((int) $stockCount, 1) }} }">
-                @if ($category)
-                    <flux:badge as="a" :href="route('products.index', ['category' => $category])" pill
-                        color="zinc" variant="outline" class="px-3! py-1! text-[13px]! font-normal!">
-                        {{ $category }}</flux:badge>
+                @if ($product->categories->isNotEmpty())
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach ($product->categories as $cat)
+                            <flux:badge as="a" :href="route('products.index', ['category' => $cat->category_name])" pill
+                                color="zinc" variant="outline" class="px-3! py-1! text-[13px]! font-normal!">
+                                {{ $cat->category_name }}
+                            </flux:badge>
+                        @endforeach
+                    </div>
                 @endif
 
                 <h1 class="text-[32px] font-semibold leading-[normal] tracking-[-0.32px] text-zinc-800">
@@ -288,7 +293,7 @@
                     </div>
                     <button type="button" class="modal-close" onclick="closeEditModal()">&times;</button>
                 </div>
-                <form method="POST" action="{{ url('admin/products/' . $product->id) }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ url('admin/products/' . $product->id) }}" enctype="multipart/form-data" onsubmit="return validateCategorySelection(this)">
                     @csrf
                     @method('PATCH')
                     <div class="modal-body">
@@ -304,15 +309,21 @@
                         </div>
                         {{-- Category --}}
                         <div class="form-group">
-                            <label for="editCategory" class="form-label">Category</label>
-                            <select id="editCategory" name="category_id" class="form-input" required>
-                                <option value="" disabled>Select a category</option>
+                            <label class="form-label">Categories <span style="font-weight: 400; color: #ef4444; font-size: 12px;">* (Select at least 1)</span></label>
+                            <div class="category-checkbox-container" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-height: 140px; overflow-y: auto; padding: 10px; border: 1px solid #e4e4e7; border-radius: 8px; background: #fafafa; transition: border-color 0.15s, background-color 0.15s;">
+                                @php
+                                    $assignedCatIds = $product->categories->pluck('id')->all();
+                                @endphp
                                 @foreach (\App\Models\Category::all() as $cat)
-                                    <option value="{{ $cat->id }}" {{ ($product->categories->first()?->id == $cat->id) ? 'selected' : '' }}>
-                                        {{ $cat->category_name }}
-                                    </option>
+                                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #18181b; cursor: pointer; user-select: none;">
+                                        <input type="checkbox" name="category_ids[]" value="{{ $cat->id }}" {{ in_array($cat->id, $assignedCatIds) ? 'checked' : '' }} style="accent-color: #18181b; width: 15px; height: 15px; cursor: pointer;">
+                                        <span>{{ $cat->category_name }}</span>
+                                    </label>
                                 @endforeach
-                            </select>
+                            </div>
+                            <div class="category-error-msg" style="display: none; color: #ef4444; font-size: 12px; font-weight: 500; margin-top: 4px;">
+                                Please select at least one category before saving.
+                            </div>
                         </div>
                         {{-- Price & Stock --}}
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -520,6 +531,55 @@
             window.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') closeEditModal();
             });
+            // Validate at least 1 category is checked before saving
+            function validateCategorySelection(form) {
+                const checked = form.querySelectorAll('input[name="category_ids[]"]:checked');
+                const container = form.querySelector('.category-checkbox-container');
+                const errorMsg = form.querySelector('.category-error-msg');
+                const firstCheckbox = form.querySelector('input[name="category_ids[]"]');
+                if (checked.length === 0) {
+                    if (container) {
+                        container.style.borderColor = '#ef4444';
+                        container.style.backgroundColor = '#fef2f2';
+                    }
+                    if (errorMsg) errorMsg.style.display = 'block';
+                    if (firstCheckbox) {
+                        firstCheckbox.setCustomValidity('Please select at least one category.');
+                        firstCheckbox.reportValidity();
+                        firstCheckbox.focus();
+                    }
+                    return false;
+                }
+                if (container) {
+                    container.style.borderColor = '#e4e4e7';
+                    container.style.backgroundColor = '#fafafa';
+                }
+                if (errorMsg) errorMsg.style.display = 'none';
+                if (firstCheckbox) firstCheckbox.setCustomValidity('');
+                return true;
+            }
+            // Reset error when user checks any category
+            document.addEventListener('change', function(e) {
+                if (e.target.matches('input[name="category_ids[]"]')) {
+                    const form = e.target.closest('form');
+                    if (form) {
+                        const checked = form.querySelectorAll('input[name="category_ids[]"]:checked');
+                        const container = form.querySelector('.category-checkbox-container');
+                        const errorMsg = form.querySelector('.category-error-msg');
+                        const firstCheckbox = form.querySelector('input[name="category_ids[]"]');
+                        
+                        if (checked.length > 0) {
+                            if (container) {
+                                container.style.borderColor = '#e4e4e7';
+                                container.style.backgroundColor = '#fafafa';
+                            }
+                            if (errorMsg) errorMsg.style.display = 'none';
+                            if (firstCheckbox) firstCheckbox.setCustomValidity('');
+                        }
+                    }
+                }
+            });
         </script>
     @endif
+
 </x-layouts::shop>

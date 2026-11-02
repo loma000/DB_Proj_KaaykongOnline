@@ -126,7 +126,7 @@
                     <button type="button" class="modal-close" onclick="closeAddModal()">&times;</button>
                 </div>
 
-                <form method="POST" action="{{ url('admin/products') }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ url('admin/products') }}" enctype="multipart/form-data" onsubmit="return validateCategorySelection(this)">
                     @csrf
 
                     <div class="modal-body">
@@ -141,13 +141,18 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="addCategory" class="form-label">Category</label>
-                            <select id="addCategory" name="category_id" class="form-input" required>
-                                <option value="" disabled selected>Select a category</option>
+                            <label class="form-label">Categories <span style="font-weight: 400; color: #ef4444; font-size: 12px;">* (Select at least 1)</span></label>
+                            <div class="category-checkbox-container" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-height: 140px; overflow-y: auto; padding: 10px; border: 1px solid #e4e4e7; border-radius: 8px; background: #fafafa; transition: border-color 0.15s, background-color 0.15s;">
                                 @foreach (\App\Models\Category::all() as $cat)
-                                    <option value="{{ $cat->id }}">{{ $cat->category_name }}</option>
+                                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #18181b; cursor: pointer; user-select: none;">
+                                        <input type="checkbox" name="category_ids[]" value="{{ $cat->id }}" style="accent-color: #18181b; width: 15px; height: 15px; cursor: pointer;">
+                                        <span>{{ $cat->category_name }}</span>
+                                    </label>
                                 @endforeach
-                            </select>
+                            </div>
+                            <div class="category-error-msg" style="display: none; color: #ef4444; font-size: 12px; font-weight: 500; margin-top: 4px;">
+                                Please select at least one category before saving.
+                            </div>
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -174,6 +179,16 @@
                                        required 
                                        min="0" />
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="addThumbnail" class="form-label">Thumbnail Picture (optional)</label>
+                            <input type="file" 
+                                id="addThumbnail" 
+                                name="thumbnail" 
+                                accept="image/*" 
+                                class="form-input" 
+                                style="padding: 6px 12px; height: auto;" />
                         </div>
 
                         <div class="form-group">
@@ -320,6 +335,54 @@
             });
             window.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') closeAddModal();
+            });
+            // Validate at least 1 category is checked before saving
+            function validateCategorySelection(form) {
+                const checked = form.querySelectorAll('input[name="category_ids[]"]:checked');
+                const container = form.querySelector('.category-checkbox-container');
+                const errorMsg = form.querySelector('.category-error-msg');
+                const firstCheckbox = form.querySelector('input[name="category_ids[]"]');
+                if (checked.length === 0) {
+                    if (container) {
+                        container.style.borderColor = '#ef4444';
+                        container.style.backgroundColor = '#fef2f2';
+                    }
+                    if (errorMsg) errorMsg.style.display = 'block';
+                    if (firstCheckbox) {
+                        firstCheckbox.setCustomValidity('Please select at least one category.');
+                        firstCheckbox.reportValidity();
+                        firstCheckbox.focus();
+                    }
+                    return false;
+                }
+                if (container) {
+                    container.style.borderColor = '#e4e4e7';
+                    container.style.backgroundColor = '#fafafa';
+                }
+                if (errorMsg) errorMsg.style.display = 'none';
+                if (firstCheckbox) firstCheckbox.setCustomValidity('');
+                return true;
+            }
+            // Reset error when user checks any category
+            document.addEventListener('change', function(e) {
+                if (e.target.matches('input[name="category_ids[]"]')) {
+                    const form = e.target.closest('form');
+                    if (form) {
+                        const checked = form.querySelectorAll('input[name="category_ids[]"]:checked');
+                        const container = form.querySelector('.category-checkbox-container');
+                        const errorMsg = form.querySelector('.category-error-msg');
+                        const firstCheckbox = form.querySelector('input[name="category_ids[]"]');
+                        
+                        if (checked.length > 0) {
+                            if (container) {
+                                container.style.borderColor = '#e4e4e7';
+                                container.style.backgroundColor = '#fafafa';
+                            }
+                            if (errorMsg) errorMsg.style.display = 'none';
+                            if (firstCheckbox) firstCheckbox.setCustomValidity('');
+                        }
+                    }
+                }
             });
         </script>
     @endif
